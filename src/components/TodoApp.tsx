@@ -1,4 +1,4 @@
-import { Container, VStack, Heading, Separator, HStack, Button, Text, Box, Image } from '@chakra-ui/react';
+import { Container, VStack, Heading, Separator, HStack, Button, Text, Image } from '@chakra-ui/react';
 import { DndContext, closestCenter, DragOverlay, useSensors, useSensor, PointerSensor, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { useState } from 'react';
