@@ -16,6 +16,7 @@ export type Database = {
           created_at: string
           updated_at: string
           user_id: string
+          position: number
         }
         Insert: {
           id?: string
@@ -24,6 +25,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
           user_id: string
+          position?: number
         }
         Update: {
           id?: string
@@ -32,6 +34,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
           user_id?: string
+          position?: number
         }
       }
     }

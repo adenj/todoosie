@@ -7,7 +7,9 @@ import {
   IconButton,
   Box
 } from '@chakra-ui/react';
-import { FiEdit2, FiTrash2, FiCheck, FiX } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiCheck, FiX, FiMenu } from 'react-icons/fi';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { type Todo } from '@/types/todo';
 
 interface TodoItemProps {
@@ -15,11 +17,37 @@ interface TodoItemProps {
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onEdit: (id: string, newText: string) => void;
+  isDragOverlay?: boolean;
 }
 
-export const TodoItem = ({ todo, onToggle, onDelete, onEdit }: TodoItemProps) => {
+export const TodoItem = ({ todo, onToggle, onDelete, onEdit, isDragOverlay = false }: TodoItemProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(todo.title);
+
+  const sortable = useSortable({ 
+    id: todo.id,
+    disabled: isDragOverlay,
+  });
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = sortable;
+
+  const style = isDragOverlay ? {
+    // Drag overlay styles
+    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)',
+  } : {
+    // Normal sortable styles
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
 
   const handleSave = () => {
     if (editValue.trim()) {
@@ -43,6 +71,8 @@ export const TodoItem = ({ todo, onToggle, onDelete, onEdit }: TodoItemProps) =>
 
   return (
     <Box
+      ref={setNodeRef}
+      style={style}
       p={3}
       borderWidth={1}
       borderRadius="md"
@@ -53,6 +83,21 @@ export const TodoItem = ({ todo, onToggle, onDelete, onEdit }: TodoItemProps) =>
       }}
     >
       <HStack gap={3}>
+        {/* Drag Handle */}
+        <IconButton
+          ref={isDragOverlay ? undefined : setActivatorNodeRef}
+          {...(isDragOverlay ? {} : attributes)}
+          {...(isDragOverlay ? {} : listeners)}
+          aria-label="Drag handle"
+          size="sm"
+          variant="ghost"
+          cursor={isDragOverlay ? "default" : "grab"}
+          _active={{ cursor: isDragOverlay ? "default" : 'grabbing' }}
+          opacity={isEditing ? 0.3 : 1}
+          disabled={isEditing || isDragOverlay}
+        >
+          <FiMenu />
+        </IconButton>
         <Checkbox.Root
           checked={todo.completed}
           onCheckedChange={() => onToggle(todo.id)}

@@ -39,9 +39,13 @@ export const useTodos = () => {
               });
             } else if (payload.eventType === 'UPDATE') {
               const updatedTodo = payload.new as Todo;
-              setTodos(prev => prev.map(todo =>
-                todo.id === updatedTodo.id ? updatedTodo : todo
-              ));
+              setTodos(prev => {
+                const updated = prev.map(todo =>
+                  todo.id === updatedTodo.id ? updatedTodo : todo
+                );
+                // If position changed, re-sort by position
+                return updated.sort((a, b) => a.position - b.position);
+              });
             } else if (payload.eventType === 'DELETE') {
               const deletedTodo = payload.old as Todo;
               setTodos(prev => prev.filter(todo => todo.id !== deletedTodo.id));
@@ -64,7 +68,7 @@ export const useTodos = () => {
       .from('todos')
       .select('*')
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .order('position', { ascending: true });
 
     if (error) {
       console.error('Error fetching todos:', error);
@@ -78,12 +82,17 @@ export const useTodos = () => {
     if (text.trim() === '' || !user) return;
 
     setLoading(true);
+    
+    // Calculate position - new todos go at the end
+    const maxPosition = todos.length > 0 ? Math.max(...todos.map(t => t.position)) : 0;
+    
     const { data, error } = await supabase
       .from('todos')
       .insert([
         {
           title: text.trim(),
           user_id: user.id,
+          position: maxPosition + 1,
         },
       ])
       .select();
@@ -194,6 +203,34 @@ export const useTodos = () => {
     }
   };
 
+  const reorderTodos = async (reorderedTodos: Todo[]): Promise<void> => {
+    // Optimistic update - immediately update local state
+    setTodos(reorderedTodos);
+
+    // Update positions in database
+    const updates = reorderedTodos.map((todo, index) => ({
+      id: todo.id,
+      position: index + 1,
+    }));
+
+    try {
+      // Update each todo's position
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('todos')
+          .update({ position: update.position })
+          .eq('id', update.id);
+
+        if (error) {
+          console.error(`Error updating position for todo ${update.id}:`, error);
+        }
+      }
+    } catch (error) {
+      console.error('Error reordering todos:', error);
+      // Could implement rollback logic here if needed
+    }
+  };
+
   const filteredTodos = todos.filter(todo => {
     switch (filter) {
       case 'active':
@@ -219,6 +256,7 @@ export const useTodos = () => {
     toggleTodo,
     deleteTodo,
     editTodo,
-    clearCompleted
+    clearCompleted,
+    reorderTodos
   };
 };
