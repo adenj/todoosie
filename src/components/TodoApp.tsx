@@ -1,5 +1,5 @@
 import { Container, VStack, Heading, Separator, HStack, Button, Text, Image } from '@chakra-ui/react';
-import { DndContext, closestCenter, DragOverlay, useSensors, useSensor, PointerSensor, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter, DragOverlay, useSensors, useSensor, PointerSensor, TouchSensor, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { useState } from 'react';
 import { useTodos } from '@/hooks/useTodos';
@@ -28,17 +28,25 @@ export const TodoApp = () => {
 
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  // Configure sensors for better drag experience
+  // Configure sensors for better drag experience on both desktop and mobile
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8, // 8px of movement required to start drag
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250, // 250ms delay before activating on touch
+        tolerance: 5, // 5px tolerance for touch movement
       },
     })
   );
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
+    // Prevent page scroll during drag on mobile
+    document.body.style.overflow = 'hidden';
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -57,6 +65,8 @@ export const TodoApp = () => {
     }
 
     setActiveId(null);
+    // Re-enable page scroll after drag ends
+    document.body.style.overflow = '';
   };
 
   const handleSignOut = async () => {
